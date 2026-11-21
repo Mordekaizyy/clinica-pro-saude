@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: clinica-pro-saude-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: clinica_pro_saude
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+    ports:
+      - "5432:5432"
+    volumes:
+      - clinica_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d clinica_pro_saude"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  clinica_postgres_data:
