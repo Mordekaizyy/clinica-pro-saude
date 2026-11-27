@@ -54,4 +54,41 @@ public class ProfissionaisController(ClinicaDbContext db) : ControllerBase
         await db.SaveChangesAsync();
         return NoContent();
     }
+
+    // Lista todos os vínculos profissional ↔ procedimento.
+    [HttpGet("vinculos")]
+    public async Task<ActionResult> GetVinculos() =>
+        Ok(await db.ProfissionalProcedimentos.AsNoTracking()
+            .Select(x => new { x.ProfissionalId, x.ProcedimentoId })
+            .ToListAsync());
+
+    [HttpGet("{id:int}/procedimentos")]
+    public async Task<ActionResult<IEnumerable<Procedimento>>> GetProcedimentos(int id)
+    {
+        if (!await db.Profissionais.AnyAsync(x => x.Id == id)) return NotFound();
+        var items = await db.ProfissionalProcedimentos.AsNoTracking()
+            .Where(x => x.ProfissionalId == id)
+            .Select(x => x.Procedimento!)
+            .OrderBy(x => x.Nome)
+            .ToListAsync();
+        return Ok(items);
+    }
+
+    // Substitui todos os procedimentos vinculados ao profissional.
+    [HttpPut("{id:int}/procedimentos")]
+    public async Task<IActionResult> SetProcedimentos(int id, [FromBody] int[] procedimentoIds)
+    {
+        if (!await db.Profissionais.AnyAsync(x => x.Id == id)) return NotFound();
+
+        var ids = procedimentoIds.Distinct().ToList();
+        var existentes = await db.Procedimentos.Where(x => ids.Contains(x.Id)).Select(x => x.Id).ToListAsync();
+        if (existentes.Count != ids.Count)
+            return BadRequest("Um ou mais procedimentos não foram encontrados.");
+
+        var atuais = await db.ProfissionalProcedimentos.Where(x => x.ProfissionalId == id).ToListAsync();
+        db.ProfissionalProcedimentos.RemoveRange(atuais);
+        db.ProfissionalProcedimentos.AddRange(ids.Select(pid => new ProfissionalProcedimento { ProfissionalId = id, ProcedimentoId = pid }));
+        await db.SaveChangesAsync();
+        return NoContent();
+    }
 }

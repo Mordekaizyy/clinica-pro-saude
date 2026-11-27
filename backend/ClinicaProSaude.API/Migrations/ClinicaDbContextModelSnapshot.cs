@@ -30,16 +30,27 @@ namespace ClinicaProSaude.API.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<bool>("Convenio")
+                        .HasColumnType("boolean");
+
                     b.Property<DateTime>("Fim")
                         .HasColumnType("timestamp without time zone");
 
                     b.Property<DateTime>("Inicio")
                         .HasColumnType("timestamp without time zone");
 
+                    b.Property<string>("NumeroCarteirinha")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
                     b.Property<string>("PacienteNome")
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)");
+
+                    b.Property<string>("PacienteTelefone")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<int>("ProcedimentoId")
                         .HasColumnType("integer");
@@ -150,6 +161,21 @@ namespace ClinicaProSaude.API.Migrations
                     b.ToTable("Profissionais");
                 });
 
+            modelBuilder.Entity("ClinicaProSaude.API.Models.ProfissionalProcedimento", b =>
+                {
+                    b.Property<int>("ProfissionalId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ProcedimentoId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("ProfissionalId", "ProcedimentoId");
+
+                    b.HasIndex("ProcedimentoId");
+
+                    b.ToTable("ProfissionalProcedimentos");
+                });
+
             modelBuilder.Entity("ClinicaProSaude.API.Models.Agendamento", b =>
                 {
                     b.HasOne("ClinicaProSaude.API.Models.Procedimento", "Procedimento")
@@ -162,6 +188,25 @@ namespace ClinicaProSaude.API.Migrations
                         .WithMany("Agendamentos")
                         .HasForeignKey("ProfissionalId")
                         .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Procedimento");
+
+                    b.Navigation("Profissional");
+                });
+
+            modelBuilder.Entity("ClinicaProSaude.API.Models.ProfissionalProcedimento", b =>
+                {
+                    b.HasOne("ClinicaProSaude.API.Models.Procedimento", "Procedimento")
+                        .WithMany()
+                        .HasForeignKey("ProcedimentoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ClinicaProSaude.API.Models.Profissional", "Profissional")
+                        .WithMany()
+                        .HasForeignKey("ProfissionalId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Procedimento");

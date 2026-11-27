@@ -9,11 +9,19 @@ public class ClinicaDbContext(DbContextOptions<ClinicaDbContext> options) : DbCo
     public DbSet<Procedimento> Procedimentos => Set<Procedimento>();
     public DbSet<Agendamento> Agendamentos => Set<Agendamento>();
     public DbSet<ModeloMensagem> ModelosMensagem => Set<ModeloMensagem>();
+    public DbSet<ProfissionalProcedimento> ProfissionalProcedimentos => Set<ProfissionalProcedimento>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Profissional>().HasIndex(x => x.Nome);
         modelBuilder.Entity<Procedimento>().HasIndex(x => x.Nome);
+
+        modelBuilder.Entity<ProfissionalProcedimento>(entity =>
+        {
+            entity.HasKey(x => new { x.ProfissionalId, x.ProcedimentoId });
+            entity.HasOne(x => x.Profissional).WithMany().HasForeignKey(x => x.ProfissionalId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(x => x.Procedimento).WithMany().HasForeignKey(x => x.ProcedimentoId).OnDelete(DeleteBehavior.Cascade);
+        });
 
         modelBuilder.Entity<Agendamento>()
             .HasOne(x => x.Profissional)

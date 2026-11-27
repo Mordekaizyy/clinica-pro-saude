@@ -9,6 +9,14 @@ public class Agendamento
     [Required, MaxLength(150)]
     public string PacienteNome { get; set; } = string.Empty;
 
+    [MaxLength(20)]
+    public string? PacienteTelefone { get; set; }
+
+    public bool Convenio { get; set; }
+
+    [MaxLength(50)]
+    public string? NumeroCarteirinha { get; set; }
+
     public DateTime Inicio { get; set; }
     public DateTime Fim { get; set; }
 

@@ -11,7 +11,7 @@ namespace ClinicaProSaude.API.Controllers;
 public class AgendamentosController(ClinicaDbContext db) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult> GetAll([FromQuery] DateOnly? data)
+    public async Task<ActionResult> GetAll([FromQuery] DateOnly? data, [FromQuery] DateTime? inicio, [FromQuery] DateTime? fim, [FromQuery] int? profissionalId)
     {
         var query = db.Agendamentos
             .AsNoTracking()
@@ -25,6 +25,10 @@ public class AgendamentosController(ClinicaDbContext db) : ControllerBase
             var fimDia = inicioDia.AddDays(1);
             query = query.Where(x => x.Inicio >= inicioDia && x.Inicio < fimDia);
         }
+
+        if (inicio.HasValue) query = query.Where(x => x.Fim > inicio.Value);
+        if (fim.HasValue) query = query.Where(x => x.Inicio < fim.Value);
+        if (profissionalId.HasValue) query = query.Where(x => x.ProfissionalId == profissionalId.Value);
 
         var items = await query.OrderBy(x => x.Inicio).ToListAsync();
         return Ok(items);
@@ -46,6 +50,17 @@ public class AgendamentosController(ClinicaDbContext db) : ControllerBase
         if (procedimento is null)
             return BadRequest("Procedimento não encontrado ou inativo.");
 
+        var vinculado = await db.ProfissionalProcedimentos.AnyAsync(x =>
+            x.ProfissionalId == dto.ProfissionalId && x.ProcedimentoId == dto.ProcedimentoId);
+        if (!vinculado)
+            return BadRequest("Este procedimento não é oferecido pelo profissional selecionado.");
+
+        if (string.IsNullOrWhiteSpace(dto.PacienteTelefone))
+            return BadRequest("Informe o telefone do paciente.");
+
+        if (dto.Convenio && string.IsNullOrWhiteSpace(dto.NumeroCarteirinha))
+            return BadRequest("Informe o número da carteirinha do convênio.");
+
         var fim = dto.Inicio.AddMinutes(procedimento.DuracaoMinutos);
 
         var conflito = await db.Agendamentos.AnyAsync(x =>
@@ -60,6 +75,9 @@ public class AgendamentosController(ClinicaDbContext db) : ControllerBase
         var item = new Agendamento
         {
             PacienteNome = dto.PacienteNome.Trim(),
+            PacienteTelefone = dto.PacienteTelefone.Trim(),
+            Convenio = dto.Convenio,
+            NumeroCarteirinha = dto.Convenio ? dto.NumeroCarteirinha?.Trim() : null,
             Inicio = dto.Inicio,
             Fim = fim,
             ProfissionalId = dto.ProfissionalId,
